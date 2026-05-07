@@ -112,6 +112,7 @@
             </div>
             <div class="col-md-8 d-flex gap-2 mt-3 mt-md-0 flex-wrap">
                 <button onclick="applyFilter()" class="btn btn-secondary flex-grow-1">Aplicar</button>
+                <!-- Botão de limpar alterado para refletir o comportamento padrão -->
                 <button onclick="window.print()" class="btn btn-light fw-bold text-dark flex-grow-1"><i class="bi bi-printer me-1"></i> Imprimir</button>
                 <button onclick="resetCache()" class="btn btn-warning fw-bold text-dark flex-grow-1"><i class="bi bi-arrow-clockwise me-1"></i> Atualizar</button>
             </div>
@@ -160,7 +161,7 @@
 
             <!-- Tabela com números detalhados e Ícones -->
             <div class="card shadow-sm p-4 mb-4">
-                <h5 class="mb-3 text-light">Detalhamento Completo (Anual)</h5>
+                <h5 class="mb-3 text-light">Detalhamento Completo</h5>
                 <div class="table-responsive">
                     <table class="table table-dark table-hover align-middle mb-0">
                         <thead>
@@ -178,10 +179,10 @@
                             </tr>
                         </thead>
                         <tbody id="dataTableBody" class="border-secondary">
-                            <!-- JS injeta os 12 meses aqui -->
+                            <!-- JS injeta os meses filtrados aqui -->
                         </tbody>
                         <tfoot id="dataTableFoot">
-                            <!-- JS injeta o Total Geral do Ano -->
+                            <!-- JS injeta o Total Geral -->
                         </tfoot>
                     </table>
                 </div>
@@ -317,13 +318,16 @@
     function renderApp() {
         const fullData = getFullYearData(salesData);
 
-        updateTable(fullData);
-
         const start = document.getElementById('filterStart').value;
         const end = document.getElementById('filterEnd').value;
         
-        let filteredData = fullData;
-        if (start || end) {
+        let filteredData = [];
+        
+        // LÓGICA DE FILTRO ATUALIZADA
+        // Se ambos os campos estiverem vazios, trava em 2026. Se houver filtro, obedece o filtro.
+        if (!start && !end) {
+            filteredData = fullData.filter(item => item.month.startsWith('2026'));
+        } else {
             filteredData = fullData.filter(item => {
                 if (start && item.month < start) return false;
                 if (end && item.month > end) return false;
@@ -331,6 +335,8 @@
             });
         }
 
+        // Agora a tabela também recebe os dados filtrados!
+        updateTable(filteredData);
         updateCardsAndChart(filteredData);
     }
 
@@ -425,7 +431,7 @@
 
         tfoot.innerHTML = `
             <tr>
-                <td class="text-secondary fw-bold">TOTAL DO ANO</td>
+                <td class="text-secondary fw-bold">TOTAL DO PERÍODO</td>
                 <td class="text-ml fw-bold">${formatCurrency(sumMl)}</td>
                 <td class="text-hotmart fw-bold">${formatCurrency(sumHotmart)}</td>
                 <td class="text-success fw-bold">${formatCurrency(sumMl + sumHotmart)}</td>
