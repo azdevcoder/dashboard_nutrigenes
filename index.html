@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nutrigenes | Dashboard Vendas</title>
+    <title>Dashboard de Vendas | Nutrigenes</title>
     <!-- Bootstrap 5 CSS -->
     <link rel="icon" type="image/png" href="logo nutrigenes SIMBOLO.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -32,7 +34,6 @@
                 width: 100% !important;
                 padding: 0 !important;
             }
-            /* Ajuste do cabeçalho na impressão */
             .print-header {
                 justify-content: center !important;
                 margin-top: 20px;
@@ -94,7 +95,7 @@
 <div class="container py-4">
     <!-- Cabeçalho com Logo Nutrigenes -->
     <div class="d-flex align-items-center mb-4 print-header">
-        <img src="logobranca.png" alt="Nutrigenes" height="50" class="me-3">
+        <img src="logo_nutrigenes.png" alt="Nutrigenes" height="50" class="me-3">
         <h2 class="text-light mb-0">Dashboard de Vendas</h2>
     </div>
 
@@ -111,19 +112,20 @@
             </div>
             <div class="col-md-8 d-flex gap-2 mt-3 mt-md-0 flex-wrap">
                 <button onclick="applyFilter()" class="btn btn-secondary flex-grow-1">Aplicar</button>
-                <button onclick="window.print()" class="btn btn-light fw-bold text-dark flex-grow-1">Imprimir</button>
-                <button onclick="resetCache()" class="btn btn-warning fw-bold text-dark flex-grow-1">Atualizar</button>
+                <button onclick="clearFilter()" class="btn btn-outline-danger flex-grow-1">Ver Ano Todo</button>
+                <button onclick="window.print()" class="btn btn-light fw-bold text-dark flex-grow-1"><i class="bi bi-printer me-1"></i> Imprimir</button>
+                <button onclick="resetCache()" class="btn btn-warning fw-bold text-dark flex-grow-1"><i class="bi bi-arrow-clockwise me-1"></i> Atualizar</button>
             </div>
         </div>
     </div>
 
-    <!-- Cards de Resumo com Logos ML e Hotmart -->
+    <!-- Cards de Resumo com Ícones ML e Hotmart -->
     <div class="row mb-4 print-cards-row">
         <div class="col-md-4">
             <div class="card summary-card shadow-sm p-3 mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="card-title text-secondary mb-0">Mercado Livre</h5>
-                    <img src="logo_ml.png" alt="ML" height="28">
+                    <i class="bi bi-handshake" style="font-size: 1.8rem; color: #FFE600;"></i>
                 </div>
                 <h3 id="totalMl" class="mb-0 text-ml">R$ 0,00</h3>
             </div>
@@ -132,7 +134,7 @@
             <div class="card summary-card shadow-sm p-3 mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="card-title text-secondary mb-0">Hotmart</h5>
-                    <img src="logo_hotmart.png" alt="Hotmart" height="28">
+                    <i class="bi bi-fire" style="font-size: 1.8rem; color: #F04E23;"></i>
                 </div>
                 <h3 id="totalHotmart" class="mb-0 text-hotmart">R$ 0,00</h3>
             </div>
@@ -141,6 +143,7 @@
             <div class="card summary-card shadow-sm p-3 mb-3" style="border-color: #198754;">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="card-title text-secondary mb-0">Faturamento Total</h5>
+                    <i class="bi bi-cash-stack text-success" style="font-size: 1.8rem;"></i>
                 </div>
                 <h3 id="totalGeral" class="mb-0 text-success">R$ 0,00</h3>
             </div>
@@ -156,7 +159,7 @@
                 <canvas id="salesChart" height="120"></canvas>
             </div>
 
-            <!-- Tabela com números detalhados e Logos -->
+            <!-- Tabela com números detalhados e Ícones -->
             <div class="card shadow-sm p-4 mb-4">
                 <h5 class="mb-3 text-light">Detalhamento Completo (Anual)</h5>
                 <div class="table-responsive">
@@ -165,12 +168,14 @@
                             <tr class="border-secondary">
                                 <th class="text-secondary fw-normal">Mês</th>
                                 <th class="text-ml fw-normal">
-                                    <img src="logo_ml.png" height="18" class="me-2" alt="ML"> Mercado Livre
+                                    <i class="bi bi-handshake me-1"></i> Mercado Livre
                                 </th>
                                 <th class="text-hotmart fw-normal">
-                                    <img src="logo_hotmart.png" height="18" class="me-2" alt="Hotmart"> Hotmart
+                                    <i class="bi bi-fire me-1"></i> Hotmart
                                 </th>
-                                <th class="text-success fw-normal">Total do Mês</th>
+                                <th class="text-success fw-normal">
+                                    <i class="bi bi-cash-stack me-1"></i> Total do Mês
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody" class="border-secondary">
@@ -194,11 +199,11 @@
                         <input type="month" id="saleMonth" class="form-control bg-dark text-light border-secondary" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-secondary">Mercado Livre (R$)</label>
+                        <label class="form-label text-secondary"><i class="bi bi-handshake me-1 text-ml"></i> Mercado Livre (R$)</label>
                         <input type="number" step="0.01" id="valMl" class="form-control bg-dark text-light border-secondary" placeholder="0.00" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-secondary">Hotmart (R$)</label>
+                        <label class="form-label text-secondary"><i class="bi bi-fire me-1 text-hotmart"></i> Hotmart (R$)</label>
                         <input type="number" step="0.01" id="valHotmart" class="form-control bg-dark text-light border-secondary" placeholder="0.00" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Registrar Venda</button>
@@ -292,7 +297,7 @@
     }
 
     function resetCache() {
-        if(confirm("Tem certeza que deseja atulizar?")) {
+        if(confirm("Tem certeza que deseja apagar os lançamentos novos e restaurar a base inicial?")) {
             localStorage.removeItem('salesData');
             window.location.reload();
         }
