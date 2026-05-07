@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Vendas | ML & Hotmart</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #121212; }
+        .card { 
+            border-radius: 10px; 
+            border: 1px solid #333; 
+            background-color: #1e1e1e !important;
+        }
+        .summary-card { transition: transform 0.2s; }
+        .summary-card:hover { transform: translateY(-5px); }
+        .text-ml { color: #FFE600; }
+        .text-hotmart { color: #F04E23; }
+        .table-dark { --bs-table-bg: #1e1e1e; }
+
+        /* REGRAS ESPECÍFICAS PARA IMPRESSÃO */
+        @media print {
+            body { 
+                background-color: #ffffff !important; 
+            }
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+            h2 {
+                color: #000000 !important;
+                text-align: center;
+                margin-top: 20px;
+            }
+            .d-print-none { 
+                display: none !important; 
+            }
+            .col-lg-8 { 
+                width: 100% !important; 
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+            }
+            .card {
+                background-color: #ffffff !important;
+                border: 1px solid #cccccc !important;
+                box-shadow: none !important;
+            }
+            .card-title {
+                color: #555555 !important;
+            }
+            .print-cards-row {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+            .print-cards-row > .col-md-4 {
+                width: 33.3333% !important;
+                padding: 0 10px !important;
+            }
+            .text-light { color: #000000 !important; }
+            .text-secondary { color: #555555 !important; }
+            .text-ml { color: #b38b00 !important; } 
+            
+            .table-dark {
+                --bs-table-bg: #ffffff;
+                --bs-table-color: #000000;
+            }
+            table {
+                border-collapse: collapse !important;
+            }
+            th, td {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                border: 1px solid #dddddd !important;
+            }
+            thead th {
+                background-color: #f8f9fa !important;
+                font-weight: bold !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <h2 class="mb-4 text-light">Dashboard de Vendas</h2>
+
+    <!-- Filtro e Controles no Topo (Não aparece na impressão) -->
+    <div class="card shadow-sm p-3 mb-4 d-print-none">
+        <div class="row align-items-end">
+            <div class="col-md-2">
+                <label class="form-label text-secondary">Filtrar De:</label>
+                <input type="month" id="filterStart" class="form-control bg-dark text-light border-secondary">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-secondary">Filtrar Até:</label>
+                <input type="month" id="filterEnd" class="form-control bg-dark text-light border-secondary">
+            </div>
+            <div class="col-md-8 d-flex gap-2 mt-3 mt-md-0 flex-wrap">
+                <button onclick="applyFilter()" class="btn btn-secondary flex-grow-1">Aplicar</button>
+                <button onclick="window.print()" class="btn btn-light fw-bold text-dark flex-grow-1">Imprimir</button>
+                <button onclick="resetCache()" class="btn btn-warning fw-bold text-dark flex-grow-1">Atualizar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4 print-cards-row">
+        <div class="col-md-4">
+            <div class="card summary-card shadow-sm p-3 mb-3">
+                <h5 class="card-title text-secondary">Mercado Livre</h5>
+                <h3 id="totalMl" class="mb-0 text-ml">R$ 0,00</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card summary-card shadow-sm p-3 mb-3">
+                <h5 class="card-title text-secondary">Hotmart</h5>
+                <h3 id="totalHotmart" class="mb-0 text-hotmart">R$ 0,00</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card summary-card shadow-sm p-3 mb-3" style="border-color: #198754;">
+                <h5 class="card-title text-secondary">Faturamento Total</h5>
+                <h3 id="totalGeral" class="mb-0 text-success">R$ 0,00</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Coluna Principal (Gráfico e Tabela) -->
+        <div class="col-lg-8">
+            <!-- Gráfico (Não aparece na impressão) -->
+            <div class="card shadow-sm p-4 mb-4 d-print-none">
+                <h5 class="mb-3 text-light">Receita Mês a Mês</h5>
+                <canvas id="salesChart" height="120"></canvas>
+            </div>
+
+            <!-- Tabela com números detalhados -->
+            <div class="card shadow-sm p-4 mb-4">
+                <h5 class="mb-3 text-light">Detalhamento Completo (Anual)</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="border-secondary">
+                                <th class="text-secondary fw-normal">Mês</th>
+                                <th class="text-ml fw-normal">Mercado Livre</th>
+                                <th class="text-hotmart fw-normal">Hotmart</th>
+                                <th class="text-success fw-normal">Total do Mês</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="border-secondary">
+                            <!-- JS injeta os 12 meses aqui -->
+                        </tbody>
+                        <tfoot id="dataTableFoot">
+                            <!-- JS injeta o Total Geral do Ano -->
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Lançamento (Não aparece na impressão) -->
+        <div class="col-lg-4 d-print-none">
+            <div class="card shadow-sm p-4 mb-4">
+                <h5 class="mb-3 text-light">Lançar Novo Mês</h5>
+                <form id="salesForm">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Mês/Ano</label>
+                        <input type="month" id="saleMonth" class="form-control bg-dark text-light border-secondary" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Mercado Livre (R$)</label>
+                        <input type="number" step="0.01" id="valMl" class="form-control bg-dark text-light border-secondary" placeholder="0.00" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Hotmart (R$)</label>
+                        <input type="number" step="0.01" id="valHotmart" class="form-control bg-dark text-light border-secondary" placeholder="0.00" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Registrar Venda</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const initialData = [
+        { month: '2026-01', ml: 31326.00, hotmart: 2544.52 },
+        { month: '2026-02', ml: 13340.00, hotmart: 3744.32 },
+        { month: '2026-03', ml: 47784.00, hotmart: 2535.80 },
+        { month: '2026-04', ml: 32290.00, hotmart: 2195.85 },
+        { month: '2026-05', ml: 7749.00, hotmart: 59.99 }
+    ];
+
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    let salesData = JSON.parse(localStorage.getItem('salesData'));
+    if (!salesData || !Array.isArray(salesData) || salesData.length === 0) {
+        salesData = initialData;
+        localStorage.setItem('salesData', JSON.stringify(salesData));
+    }
+
+    let salesChartInstance = null;
+
+    Chart.defaults.color = '#a0a0a0';
+    Chart.defaults.borderColor = '#333333';
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
+    function getFullYearData(sourceData) {
+        if (!sourceData || !Array.isArray(sourceData) || sourceData.length === 0) return [];
+        
+        const validData = sourceData.filter(item => item && item.month && typeof item.month === 'string' && item.month.includes('-'));
+        if(validData.length === 0) return [];
+
+        const years = [...new Set(validData.map(item => item.month.split('-')[0]))].sort();
+        const fullData = [];
+
+        years.forEach(year => {
+            for(let i = 1; i <= 12; i++) {
+                const monthStr = `${year}-${i.toString().padStart(2, '0')}`;
+                const found = validData.find(d => d.month === monthStr);
+                
+                if (found) {
+                    fullData.push({ month: monthStr, ml: found.ml || 0, hotmart: found.hotmart || 0 });
+                } else {
+                    fullData.push({ month: monthStr, ml: 0, hotmart: 0 });
+                }
+            }
+        });
+        
+        return fullData;
+    }
+
+    document.getElementById('salesForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const month = document.getElementById('saleMonth').value;
+        const mlValue = parseFloat(document.getElementById('valMl').value);
+        const hotmartValue = parseFloat(document.getElementById('valHotmart').value);
+
+        const existingIndex = salesData.findIndex(item => item && item.month === month);
+        if (existingIndex >= 0) {
+            salesData[existingIndex].ml += mlValue;
+            salesData[existingIndex].hotmart += hotmartValue;
+        } else {
+            salesData.push({ month, ml: mlValue, hotmart: hotmartValue });
+        }
+
+        salesData.sort((a, b) => (a.month || '').localeCompare(b.month || ''));
+        localStorage.setItem('salesData', JSON.stringify(salesData));
+        
+        this.reset();
+        renderApp(); 
+    });
+
+    function applyFilter() {
+        renderApp();
+    }
+
+    function clearFilter() {
+        document.getElementById('filterStart').value = '';
+        document.getElementById('filterEnd').value = '';
+        renderApp();
+    }
+
+    // NOVA FUNÇÃO: Limpar o LocalStorage e resetar
+    function resetCache() {
+        if(confirm("Tem certeza que deseja apagar os lançamentos novos e restaurar a base inicial?")) {
+            localStorage.removeItem('salesData');
+            window.location.reload();
+        }
+    }
+
+    function renderApp() {
+        const fullData = getFullYearData(salesData);
+
+        updateTable(fullData);
+
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        
+        let filteredData = fullData;
+        if (start || end) {
+            filteredData = fullData.filter(item => {
+                if (start && item.month < start) return false;
+                if (end && item.month > end) return false;
+                return true;
+            });
+        }
+
+        updateCardsAndChart(filteredData);
+    }
+
+    function updateCardsAndChart(dataToRender) {
+        let totalMl = 0;
+        let totalHotmart = 0;
+
+        const labels = [];
+        const mlData = [];
+        const hotmartData = [];
+
+        dataToRender.forEach(item => {
+            totalMl += item.ml;
+            totalHotmart += item.hotmart;
+            
+            const [year, monthNum] = item.month.split('-');
+            labels.push(`${monthNames[parseInt(monthNum) - 1]} ${year}`); 
+            
+            mlData.push(item.ml);
+            hotmartData.push(item.hotmart);
+        });
+
+        document.getElementById('totalMl').innerText = formatCurrency(totalMl);
+        document.getElementById('totalHotmart').innerText = formatCurrency(totalHotmart);
+        document.getElementById('totalGeral').innerText = formatCurrency(totalMl + totalHotmart);
+
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        if (salesChartInstance) salesChartInstance.destroy();
+
+        salesChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Mercado Livre',
+                        data: mlData,
+                        backgroundColor: '#FFE600',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Hotmart',
+                        data: hotmartData,
+                        backgroundColor: '#F04E23',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#e0e0e0' } }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: '#333' },
+                        ticks: { callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); } }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function updateTable(dataToRender) {
+        const tbody = document.getElementById('dataTableBody');
+        const tfoot = document.getElementById('dataTableFoot');
+        
+        tbody.innerHTML = '';
+        
+        let sumMl = 0;
+        let sumHotmart = 0;
+
+        dataToRender.forEach(item => {
+            const [year, monthNum] = item.month.split('-');
+            const monthLabel = `${monthNames[parseInt(monthNum) - 1]} ${year}`; 
+            const total = item.ml + item.hotmart;
+            
+            sumMl += item.ml;
+            sumHotmart += item.hotmart;
+
+            tbody.innerHTML += `
+                <tr class="border-secondary">
+                    <td class="text-light">${monthLabel}</td>
+                    <td class="text-light">${formatCurrency(item.ml)}</td>
+                    <td class="text-light">${formatCurrency(item.hotmart)}</td>
+                    <td class="text-light fw-bold">${formatCurrency(total)}</td>
+                </tr>
+            `;
+        });
+
+        tfoot.innerHTML = `
+            <tr>
+                <td class="text-secondary fw-bold">TOTAL DO ANO</td>
+                <td class="text-ml fw-bold">${formatCurrency(sumMl)}</td>
+                <td class="text-hotmart fw-bold">${formatCurrency(sumHotmart)}</td>
+                <td class="text-success fw-bold">${formatCurrency(sumMl + sumHotmart)}</td>
+            </tr>
+        `;
+    }
+
+    renderApp();
+</script>
+
+</body>
+</html>
